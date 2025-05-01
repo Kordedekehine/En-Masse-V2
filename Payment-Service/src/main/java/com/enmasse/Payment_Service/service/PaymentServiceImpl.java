@@ -1,19 +1,19 @@
 package com.enmasse.Payment_Service.service;
 
-import com.enmasse.Payment_Service.dtos.CapturePaymentResponse;
-import com.enmasse.Payment_Service.dtos.CreatePaymentRequest;
-import com.enmasse.Payment_Service.dtos.CreatePaymentResponse;
-import com.enmasse.Payment_Service.dtos.StripeResponse;
-import com.enmasse.Payment_Service.entity.Payment;
+import com.enmasse.Payment_Service.client.UserClient;
+import com.enmasse.Payment_Service.dtos.*;
 import com.enmasse.Payment_Service.repository.PaymentRepository;
 import com.enmasse.Payment_Service.utils.Constant;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,125 +26,90 @@ public class PaymentServiceImpl implements PaymentService {
     @Autowired
     private PaymentRepository paymentRepository;
 
+    @Autowired
+    private UserClient userClient;
 
     @Override
-    public StripeResponse createPayment(CreatePaymentRequest createPaymentRequest) {
+    public CreatePaymentResponse createPayment(CreatePaymentRequest createPaymentRequest, HttpServletRequest request) {
+        Stripe.apiKey = secretKey; // Set your Stripe secret key
 
-        Stripe.apiKey = secretKey;
+        UserInfoResponse userInfos = extractUserIdFromRequest(request);
 
-        // Create a PaymentIntent with the order amount and currency
-        SessionCreateParams.LineItem.PriceData.ProductData productData =
-                SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                        .setName(createPaymentRequest.name())
-                        .build();
-
-        // Create new line item with the above product data and associated price
-        SessionCreateParams.LineItem.PriceData priceData =
-                SessionCreateParams.LineItem.PriceData.builder()
-                        .setCurrency(createPaymentRequest.currency())
-                        .setUnitAmount(createPaymentRequest.amount())
-                        .setProductData(productData)
-                        .build();
-
-        // Create new line item with the above price data
-        SessionCreateParams.LineItem lineItem =
-                SessionCreateParams
-                        .LineItem.builder()
-                        .setQuantity(createPaymentRequest.quantity())
-                        .setPriceData(priceData)
-                        .build();
-
-        // Create new session with the line items
-        SessionCreateParams params =
-                SessionCreateParams.builder()
-                        .setMode(SessionCreateParams.Mode.PAYMENT)
-                        .setSuccessUrl(createPaymentRequest.successUrl())
-                        .setCancelUrl(createPaymentRequest.cancelUrl())
-                        .addLineItem(lineItem)
-                        .build();
-
-        // Create new session
-        Session session;
         try {
-            session = Session.create(params);
+            SessionCreateParams params = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setSuccessUrl(createPaymentRequest.successUrl())
+                    .setCancelUrl(createPaymentRequest.cancelUrl())
+                    .addLineItem(
+                            SessionCreateParams.LineItem.builder()
+                                    .setQuantity(createPaymentRequest.quantity())
+                                    .setPriceData(
+                                            SessionCreateParams.LineItem.PriceData.builder()
+                                                    .setCurrency(createPaymentRequest.currency())
+                                                    .setUnitAmount(createPaymentRequest.amount())
+                                                    .setProductData(
+                                                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                                                    .setName(userInfos.getName())
+                                                                    .build()
+                                                    )
+                                                    .build()
+                                    )
+                                    .build()
+                    )
+                    .build();
+
+            Session session = Session.create(params);
+
+            return CreatePaymentResponse.builder()
+                    .sessionId(session.getId())
+                    .sessionUrl(session.getUrl())
+                    .build();
+
         } catch (StripeException e) {
             e.printStackTrace();
-            return StripeResponse
-                    .builder()
-                    .status(Constant.FAILURE)
-                    .message("Payment session creation failed")
-                    .httpStatus(400)
-                    .data(null)
-                    .build();
+            throw new RuntimeException("Failed to create Stripe payment session", e);
         }
-
-        CreatePaymentResponse responseData = CreatePaymentResponse
-                .builder()
-                .sessionId(session.getId())
-                .sessionUrl(session.getUrl())
-                .build();
-
-        log.info("Create payment response: " + responseData);
-
-        Payment payment = new Payment();
-        payment.setAmount(createPaymentRequest.amount());
-        payment.setCurrency(createPaymentRequest.currency());
-        payment.setName(createPaymentRequest.name());
-        payment.setQuantity(createPaymentRequest.quantity());
-        payment.setSessionID(session.getId());
-
-        paymentRepository.save(payment);
-
-        return StripeResponse
-                .builder()
-                .status(Constant.SUCCESS)
-                .message("Payment session created successfully")
-                .httpStatus(200)
-                .data(responseData)
-                .build();
     }
 
 
     @Override
-    public StripeResponse capturePayment(String sessionId) {
+    public CapturePaymentResponse capturePayment(String sessionId) {
         Stripe.apiKey = secretKey;
 
         try {
             Session session = Session.retrieve(sessionId);
             String status = session.getStatus();
 
-            if (status.equalsIgnoreCase(Constant.STRIPE_SESSION_STATUS_SUCCESS)) {
-                // Handle logic for successful payment
-                log.info("Payment successfully captured.");
+            if ("complete".equalsIgnoreCase(status)) {
+                log.info("Payment successfully captured for sessionId: {}", sessionId);
+            } else {
+                log.info("Payment not yet completed for sessionId: {}. Current status: {}", sessionId, status);
             }
 
-            CapturePaymentResponse responseData = CapturePaymentResponse
-                    .builder()
+            return CapturePaymentResponse.builder()
                     .sessionId(sessionId)
                     .sessionStatus(status)
                     .paymentStatus(session.getPaymentStatus())
                     .build();
 
-            return StripeResponse
-                    .builder()
-                    .status(Constant.SUCCESS)
-                    .message("Payment successfully captured.")
-                    .httpStatus(200)
-                    .data(responseData)
-                    .build();
         } catch (StripeException e) {
-            // Handle capture failure, log the error, and return false
-            e.printStackTrace();
-            return StripeResponse
-                    .builder()
-                    .status(Constant.FAILURE)
-                    .message("Payment capture failed due to a server error.")
-                    .httpStatus(500)
-                    .data(null)
-                    .build();
+            log.error("Error capturing payment for sessionId {}: {}", sessionId, e.getMessage(), e);
+            throw new RuntimeException("Failed to capture payment", e);
         }
     }
 
 
+    public UserInfoResponse extractUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Missing or invalid Authorization header");
+        }
+
+        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(request);
+        UserInfoResponse userInfo = userInfoResponse.getBody();
+
+        return userInfo;
+    }
 
 }

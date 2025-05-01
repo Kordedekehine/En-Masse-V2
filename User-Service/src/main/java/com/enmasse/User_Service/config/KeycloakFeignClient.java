@@ -22,4 +22,5 @@ public interface KeycloakFeignClient {
     @PostMapping(value = "/logout", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     ResponseEntity<String> logout(@RequestBody MultiValueMap<String, String> formData);
 
+
 }

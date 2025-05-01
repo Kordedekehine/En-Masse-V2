@@ -1,14 +1,14 @@
-package com.enmasse.Product_Service.service;
+package com.enmasse.Product_Service.repository;
 
 import com.enmasse.Product_Service.dto.ProductFilterRequestDto;
 import com.enmasse.Product_Service.entity.Product;
-import com.enmasse.Product_Service.repository.ProductRepositoryCustom;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -19,7 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Repository
-public class ProductCustomServiceImpl implements ProductRepositoryCustom {
+@RequiredArgsConstructor
+public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
 
     @Autowired
     private EntityManager entityManager;
@@ -72,3 +73,4 @@ public class ProductCustomServiceImpl implements ProductRepositoryCustom {
         return new PageImpl<>(results, pageable, total);
     }
 }
+

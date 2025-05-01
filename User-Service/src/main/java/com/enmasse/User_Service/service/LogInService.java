@@ -5,13 +5,10 @@ import com.enmasse.User_Service.dtos.LoginRequest;
 import com.enmasse.User_Service.dtos.LoginResponse;
 import com.enmasse.User_Service.dtos.UserInfoResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-
-import java.util.Map;
 
 
 @Slf4j
@@ -25,7 +22,7 @@ public class LogInService {
     private String grantType;
 
     @org.springframework.beans.factory.annotation.Value("${app.keycloak.client-id}")
-    private String clientId;
+    private String clientIds;
 
     @org.springframework.beans.factory.annotation.Value("${app.keycloak.scope}")
     private String scope;
@@ -41,7 +38,7 @@ public class LogInService {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("username", request.getUsername());
         formData.add("password", request.getPassword());
-        formData.add("client_id", clientId);
+        formData.add("client_id", clientIds);
         formData.add("client_secret", clientSecret);
         formData.add("grant_type", grantType);
         formData.add("scope", scope);
@@ -51,18 +48,15 @@ public class LogInService {
         return ResponseEntity.ok(response.getBody());
     }
 
-    public void logout(String idToken) {
+    public ResponseEntity<?> logout(String refreshToken) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("id_token_hint", idToken);
-        formData.add("post_logout_redirect_uri", "http://localhost:8761"); //the redirection should be the homepage
+        formData.add("refresh_token)", refreshToken);
+        formData.add("client_id", clientIds);
 
         ResponseEntity<String> response = keycloakFeignClient.logout(formData);
 
-        if (response.getStatusCode().is2xxSuccessful()) {
-            System.out.println("Logout successful!");
-        } else {
-            System.out.println("Logout failed: " + response.getStatusCode());
-        }
+        return ResponseEntity.ok(response.getBody());
+
     }
 
 
@@ -72,18 +66,6 @@ public class LogInService {
         log.info(" token: " + accessToken);
         return ResponseEntity.ok(response.getBody());
     }
-
-//    public ResponseEntity<LoginResponse> refresh(String refreshToken) {
-//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-//        formData.add("refresh_token", refreshToken);
-//        formData.add("client_id", clientId);
-//        formData.add("client_secret", clientSecret);
-//        formData.add("grant_type", grantType);
-//        formData.add("scope", scope);
-//
-//
-//    }
-
 
 
 }

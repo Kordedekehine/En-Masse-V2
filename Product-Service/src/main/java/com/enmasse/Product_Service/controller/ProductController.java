@@ -3,6 +3,7 @@ package com.enmasse.Product_Service.controller;
 import com.enmasse.Product_Service.dto.*;
 import com.enmasse.Product_Service.repository.BrandRepository;
 import com.enmasse.Product_Service.service.ProductService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,8 +22,8 @@ public class ProductController {
     private ProductService productService;
 
     @PostMapping
-    public ResponseEntity<ProductResponseDto> createProduct(@RequestBody ProductRequestDto productRequest, @RequestParam(name="userId") Long userId) {
-        return productService.createProduct(productRequest, userId);
+    public ResponseEntity<ProductResponseDto> createProduct(@RequestBody ProductRequestDto productRequest, HttpServletRequest request) {
+        return productService.createProduct(productRequest, request);
     }
 
     @GetMapping("/{id}")
@@ -31,7 +32,7 @@ public class ProductController {
     }
 
     @GetMapping("/getProductIds")
-    List<ProductDetailsResponse> getProductsByIds(List<Long> ids){
+    List<ProductResponseDto> getProductsByIds(List<Long> ids){
         return productService.getProductsByIds(ids);
     }
 

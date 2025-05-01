@@ -1,7 +1,8 @@
-package com.enmasse.Order_Service.config;
+package com.enmasse.Order_Service.client;
 
+import com.enmasse.Order_Service.dtos.CapturePaymentResponse;
 import com.enmasse.Order_Service.dtos.CreatePaymentRequest;
-import com.enmasse.Order_Service.dtos.StripeResponse;
+import com.enmasse.Order_Service.dtos.CreatePaymentResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface PaymentClient {
 
     @PostMapping("/create-payment")
-    ResponseEntity<StripeResponse> createPayment(@RequestBody CreatePaymentRequest createPaymentRequest);
+    ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody CreatePaymentRequest createPaymentRequest);
 
     @GetMapping("/capture-payment")
-    ResponseEntity<StripeResponse> capturePayment(@RequestParam String sessionId);
+    ResponseEntity<CapturePaymentResponse> capturePayment(@RequestParam String sessionId);
 
 }

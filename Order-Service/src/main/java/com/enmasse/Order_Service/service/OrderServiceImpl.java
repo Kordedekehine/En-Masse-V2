@@ -1,14 +1,17 @@
 package com.enmasse.Order_Service.service;
 
+import com.enmasse.Order_Service.client.PaymentClient;
+import com.enmasse.Order_Service.client.ProductClient;
+import com.enmasse.Order_Service.client.UserClient;
 import com.enmasse.Order_Service.config.OrderEventProducer;
-import com.enmasse.Order_Service.config.PaymentClient;
-import com.enmasse.Order_Service.config.ProductClient;
 import com.enmasse.Order_Service.config.StockEventProducer;
 import com.enmasse.Order_Service.dtos.*;
 import com.enmasse.Order_Service.entity.Order;
 import com.enmasse.Order_Service.entity.OrderItem;
 import com.enmasse.Order_Service.entity.OrderStatus;
 import com.enmasse.Order_Service.repository.OrderRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +37,9 @@ public class OrderServiceImpl implements OrderService {
     private PaymentClient paymentClient;
 
     @Autowired
+    private UserClient userClient;
+
+    @Autowired
     private OrderEventProducer orderEventProducer;
 
     @Autowired
@@ -41,8 +47,11 @@ public class OrderServiceImpl implements OrderService {
 
 
    @Override
-    public ResponseEntity<OrderResponse> placeOrder(OrderRequest orderRequest, Long userId) {
-        // 1. Fetch product details
+    public OrderResponse placeOrder(OrderRequest orderRequest, HttpServletRequest request) {
+
+       UserInfoResponse userInfos = extractUserIdFromRequest(request);
+       Long userId = Long.valueOf(userInfos.getSub());
+
         List<Long> productIds = orderRequest.items().stream()
                 .map(OrderItemRequest::productId)
                 .toList();
@@ -90,26 +99,31 @@ public class OrderServiceImpl implements OrderService {
                 .build()
         );
 
-        // 4. Create Stripe payment session
-        StripeResponse<CreatePaymentResponse> paymentResponse = paymentClient.createPayment(
-                CreatePaymentRequest.builder()
-                        .name("Order for user " + userId)
-                        .currency("ngn")
-                        .amount(totalAmount.longValue())
-                        .quantity((long) orderItems.size())
-                        .successUrl("https://yourapp.com/payment-success") //frontend should build a checkoutpage
-                        .cancelUrl("https://yourapp.com/payment-cancel")
-                        .build()
-        ).getBody();
+       ResponseEntity<CreatePaymentResponse> paymentResponseEntity = paymentClient.createPayment(
+               CreatePaymentRequest.builder()
+                       .name("Order for user " + userInfos.getName())
+                       .currency("ngn")
+                       .amount(totalAmount.longValue())
+                       .quantity((long) orderItems.size())
+                       .successUrl("https://yourapp.com/payment-success")  // frontend builds a checkout page
+                       .cancelUrl("https://yourapp.com/payment-cancel")
+                       .build()
+       );
 
-        if (paymentResponse == null || !"SUCCESS".equalsIgnoreCase(paymentResponse.status())) {
-            throw new RuntimeException("Payment session creation failed");
-        }
+       if (paymentResponseEntity == null || !paymentResponseEntity.getStatusCode().is2xxSuccessful()) {
+           throw new RuntimeException("Payment session creation failed");
+       }
 
-        String sessionUrl = paymentResponse.data().sessionUrl();
-        String sessionId = paymentResponse.data().sessionId();
+       CreatePaymentResponse paymentResponse = paymentResponseEntity.getBody();
 
-        orderEventProducer.sendOrderCreatedEvent(new OrderCreatedEvent(
+       if (paymentResponse == null) {
+           throw new RuntimeException("Payment session creation returned no data");
+       }
+
+       String sessionUrl = paymentResponse.sessionUrl();
+       String sessionId = paymentResponse.sessionId();
+
+       orderEventProducer.sendOrderCreatedEvent(new OrderCreatedEvent(
                         userId,
                         orderItems.stream()
                                 .map(item -> new OrderItemRequest(
@@ -126,7 +140,6 @@ public class OrderServiceImpl implements OrderService {
 
         stockEventProducer.sendStockUpdateEvent(productsOrdered);
 
-        // 7. Build response
         OrderResponse response = OrderResponse.builder()
                 .id(order.getId())
                 .userId(order.getUserId())
@@ -141,21 +154,36 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Stripe session URL: {}", sessionUrl);
 
-        return ResponseEntity.ok(response);
+        return response;
     }
 
+    @Transactional
+    public CapturePaymentResponse confirmPaymentAndUpdateOrder(String sessionId) {
 
-//    private List<OrderItemResponse> mapToItemResponses(List<OrderItem> items) {
-//        return items.stream()
-//                .map(item -> new OrderItemResponse(
-//                        item.getProductId(),
-//                        item.getProductName(),
-//                        item.getPrice(),
-//                        item.getQuantity()
-//                ))
-//                .toList();
-//    }
+        ResponseEntity<CapturePaymentResponse> paymentResponseEntity = paymentClient.capturePayment(sessionId);
+        CapturePaymentResponse paymentResponse = paymentResponseEntity.getBody();
 
+        if (paymentResponse != null) {
+            if ("complete".equalsIgnoreCase(paymentResponse.sessionStatus()) &&
+                    "paid".equalsIgnoreCase(paymentResponse.paymentStatus())) {
+
+                Order order = orderRepository.findBySessionId(sessionId)
+                        .orElseThrow(() -> new RuntimeException("Order not found for sessionId: " + sessionId));
+
+                order.setStatus(OrderStatus.COMPLETED);
+                orderRepository.save(order);
+
+                log.info("Order {} payment confirmed and status updated to SUCCESS", order.getOrderNumber());
+            } else {
+                log.warn("Session {} payment not completed or not paid. SessionStatus: {}, PaymentStatus: {}",
+                        sessionId, paymentResponse.sessionStatus(), paymentResponse.paymentStatus());
+            }
+        } else {
+            log.error("Failed to capture payment for sessionId: {}.", sessionId);
+        }
+
+        return paymentResponse;
+    }
 
 
     private OrderResponse mapOrderToResponse(Order order) {
@@ -208,6 +236,20 @@ public class OrderServiceImpl implements OrderService {
                 .stream()
                 .map(this::mapOrderToResponse)
                 .toList();
+    }
+
+
+    public UserInfoResponse extractUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Missing or invalid Authorization header");
+        }
+
+        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(request);
+        UserInfoResponse userInfo = userInfoResponse.getBody();
+
+        return userInfo;
     }
 
 }

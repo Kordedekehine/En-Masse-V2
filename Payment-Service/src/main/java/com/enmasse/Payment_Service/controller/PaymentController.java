@@ -1,8 +1,11 @@
 package com.enmasse.Payment_Service.controller;
 
+import com.enmasse.Payment_Service.dtos.CapturePaymentResponse;
 import com.enmasse.Payment_Service.dtos.CreatePaymentRequest;
+import com.enmasse.Payment_Service.dtos.CreatePaymentResponse;
 import com.enmasse.Payment_Service.dtos.StripeResponse;
 import com.enmasse.Payment_Service.service.PaymentService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,19 +18,15 @@ public class PaymentController {
 private PaymentService paymentService;
 
     @PostMapping("/create-payment")
-    public ResponseEntity<StripeResponse> createPayment(@RequestBody CreatePaymentRequest createPaymentRequest) {
-        StripeResponse stripeResponse = paymentService.createPayment(createPaymentRequest);
-        return ResponseEntity
-                .status(stripeResponse.httpStatus())
-                .body(stripeResponse);
+    public ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody CreatePaymentRequest createPaymentRequest, HttpServletRequest request) {
+        CreatePaymentResponse createPaymentResponse = paymentService.createPayment(createPaymentRequest,request);
+        return ResponseEntity.ok(createPaymentResponse);
     }
-
 
     @GetMapping("/capture-payment")
-    public ResponseEntity<StripeResponse> capturePayment(@RequestParam String sessionId) {
-        StripeResponse stripeResponse = paymentService.capturePayment(sessionId);
-        return ResponseEntity
-                .status(stripeResponse.httpStatus())
-                .body(stripeResponse);
+    public ResponseEntity<CapturePaymentResponse> capturePayment(@RequestParam String sessionId) {
+        CapturePaymentResponse capturePaymentResponse = paymentService.capturePayment(sessionId);
+        return ResponseEntity.ok(capturePaymentResponse);
     }
+
 }

@@ -1,4 +1,4 @@
-package com.enmasse.Order_Service.config;
+package com.enmasse.Order_Service.client;
 
 import com.enmasse.Order_Service.dtos.ProductResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;

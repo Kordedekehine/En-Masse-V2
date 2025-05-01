@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/enMasse")
+@RequestMapping("/api/v1/user")
 public class LoginController {
 
     @Autowired
@@ -29,24 +29,32 @@ public class LoginController {
         return response;
     }
 
-    @GetMapping("/getUser")
-    public ResponseEntity<UserInfoResponse> getUserInfo (@RequestHeader("Authorization")String token) throws Exception {
 
-        ResponseEntity<UserInfoResponse> response = null;
-        response = logInService.getUserInfo(token);
-        return response;
+    @GetMapping("/userinfo")
+    public ResponseEntity<UserInfoResponse> getUserInfo(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String accessToken = authHeader.substring(7);
+        log.info("Extracted token: {}", accessToken);
+
+        ResponseEntity<UserInfoResponse> response = logInService.getUserInfo("Bearer " + accessToken);
+        return ResponseEntity.ok(response.getBody());
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String idToken = authHeader.substring(7);
-            log.info("Logout request: " + idToken);
-            logInService.logout(idToken);
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String refreshToken) {
+
+        if (refreshToken != null && refreshToken.startsWith("Bearer ")) {
+            String refreshTokens = refreshToken.substring(7);
+            log.info("Logout request: " + refreshTokens);
+            logInService.logout(refreshTokens);
             return ResponseEntity.ok("Logout successful");
         } else {
-            return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
+            throw new RuntimeException("Missing or invalid Authorization header");
         }
     }
 

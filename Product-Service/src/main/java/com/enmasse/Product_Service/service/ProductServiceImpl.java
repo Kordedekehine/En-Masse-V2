@@ -1,10 +1,12 @@
 package com.enmasse.Product_Service.service;
 
+import com.enmasse.Product_Service.client.UserClient;
 import com.enmasse.Product_Service.dto.*;
 import com.enmasse.Product_Service.entity.Brand;
 import com.enmasse.Product_Service.entity.Product;
 import com.enmasse.Product_Service.repository.BrandRepository;
 import com.enmasse.Product_Service.repository.ProductRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,8 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private UserClient userClient;
 
     private ProductResponseDto mapProductToResponse(Product product) {
 
@@ -52,9 +56,11 @@ public class ProductServiceImpl implements ProductService {
         );
     }
 
+    public ResponseEntity<ProductResponseDto> createProduct(ProductRequestDto productRequest, HttpServletRequest request) {
 
-    public ResponseEntity<ProductResponseDto> createProduct(ProductRequestDto productRequest, Long userId) {
-        // create brand if not found
+        String userId = extractUserIdFromRequest(request);
+
+        // Create brand if not found
         Brand brand = brandRepository.findByName(productRequest.brandName())
                 .orElseGet(() -> {
                     Brand newBrand = Brand.builder()
@@ -62,20 +68,17 @@ public class ProductServiceImpl implements ProductService {
                             .image(productRequest.brandImage().getBytes())
                             .build();
 
-                    brandRepository.save(newBrand);
-
-                    return newBrand;
+                    return brandRepository.save(newBrand);
                 });
 
         Product product = Product.builder()
-                .storeId(userId)
+                .storeId(Long.valueOf(userId))
                 .name(productRequest.name())
                 .description(productRequest.description())
                 .image(productRequest.image().getBytes())
                 .price(productRequest.price())
                 .category(productRequest.category())
-                .brand(brandRepository.findById(brand.getId())
-                        .orElseThrow(() -> new RuntimeException("Brand not found")))
+                .brand(brand)
                 .stock(productRequest.stock())
                 .createdOn(Date.from(Instant.now()))
                 .build();
@@ -83,6 +86,23 @@ public class ProductServiceImpl implements ProductService {
         productRepository.save(product);
 
         return new ResponseEntity<>(mapProductToResponse(product), HttpStatus.CREATED);
+    }
+
+    public String extractUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Missing or invalid Authorization header");
+        }
+
+        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(request);
+        UserInfoResponse userInfo = userInfoResponse.getBody();
+
+        if (userInfo == null || userInfo.getSub() == null) {
+            throw new RuntimeException("Unable to retrieve user info");
+        }
+
+        return userInfo.getSub();
     }
 
 
@@ -181,7 +201,6 @@ public class ProductServiceImpl implements ProductService {
                 continue;
             }
 
-            // Update stock
             product.setStock(product.getStock() - itemRequest.quantity());
             updatedProducts.add(product);
 

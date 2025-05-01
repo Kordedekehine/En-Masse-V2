@@ -21,6 +21,7 @@
 <module>Order-Service</module>
 <module>Logistic-Service</module>
 <module>Payment-Service</module>
+<module>Cart-Service</module>
 
 </modules>
 	<version>0.0.1-SNAPSHOT</version>

@@ -16,11 +16,6 @@ public class StockEventProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    List<ProductStockDto> stockUpdates = List.of(
-            new ProductStockDto(1L, 2), // productId=1, quantity=2
-            new ProductStockDto(2L, 1)  // productId=2, quantity=1
-    );
-
     public void sendStockUpdateEvent(List<ProductStockDto> stockUpdates) {
         ProductStockUpdateEvent event = ProductStockUpdateEvent.builder()
                 .stockUpdates(stockUpdates)
