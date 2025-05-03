@@ -22,6 +22,7 @@ public class OrderCreatedConsumer {
     @KafkaListener(topics = "order-created-topic", groupId = "product-group", containerFactory = "kafkaListenerContainerFactory")
     public void consumeOrderCreatedEvent(OrderCreatedEvent event) {
         log.info("Received OrderCreatedEvent: {}", event);
+        String topic = "order-created-topic";
         productService.consumeOrderCreatedEvent(event);
     }
 }

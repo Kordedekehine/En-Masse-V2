@@ -3,6 +3,7 @@ package com.enmasse.Order_Service.service;
 import com.enmasse.Order_Service.client.PaymentClient;
 import com.enmasse.Order_Service.client.ProductClient;
 import com.enmasse.Order_Service.client.UserClient;
+import com.enmasse.Order_Service.config.NotificationEventProducer;
 import com.enmasse.Order_Service.config.OrderEventProducer;
 import com.enmasse.Order_Service.config.StockEventProducer;
 import com.enmasse.Order_Service.dtos.*;
@@ -44,6 +45,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private StockEventProducer stockEventProducer;
+
+    @Autowired
+    private NotificationEventProducer notificationEventProducer;
 
 
    @Override
@@ -154,6 +158,14 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Stripe session URL: {}", sessionUrl);
 
+        NotificationEvent notificationEvent = NotificationEvent.builder()
+                .recipientEmail(userInfos.getEmail())
+                .message("Your order has been placed successfully! Kindly confirm your payment")
+                .eventType("ORDER_PLACED")
+                .build();
+
+        notificationEventProducer.sendNotification(notificationEvent);
+
         return response;
     }
 
@@ -181,6 +193,13 @@ public class OrderServiceImpl implements OrderService {
         } else {
             log.error("Failed to capture payment for sessionId: {}.", sessionId);
         }
+
+        NotificationEvent notificationEvent = NotificationEvent.builder()
+                .message("Your order has been placed successfully!")
+                .eventType("ORDER_TO_BE_DELIVERED")
+                .build();
+
+        notificationEventProducer.sendNotification(notificationEvent);
 
         return paymentResponse;
     }

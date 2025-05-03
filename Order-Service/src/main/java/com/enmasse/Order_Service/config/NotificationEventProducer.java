@@ -1,6 +1,6 @@
 package com.enmasse.Order_Service.config;
 
-import com.enmasse.Order_Service.dtos.OrderCreatedEvent;
+import com.enmasse.Order_Service.dtos.NotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -8,17 +8,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class OrderEventProducer {
+@RequiredArgsConstructor
+public class NotificationEventProducer {
 
-    private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public OrderEventProducer(KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
-
-
-    public void sendOrderCreatedEvent(OrderCreatedEvent event) {
-        String topic = "order-events";
+    public void sendNotification(NotificationEvent event) {
+        String topic = "notification-topic";
         kafkaTemplate.send(topic, event).whenComplete((result, ex) -> {
             if (ex != null) {
                 log.error("Failed to send message to topic: {}", topic, ex);
@@ -27,4 +23,6 @@ public class OrderEventProducer {
             }
         });
     }
+
 }
+

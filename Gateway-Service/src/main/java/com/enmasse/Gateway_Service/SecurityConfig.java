@@ -1,5 +1,6 @@
 package com.enmasse.Gateway_Service;
 
+import jakarta.ws.rs.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -17,7 +18,9 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(ServerHttpSecurity.CorsSpec::disable)
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/api/v1/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .pathMatchers("/api/v1/user/*",
+                                "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .pathMatchers(HttpMethod.GET,"/api/v1/product/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
