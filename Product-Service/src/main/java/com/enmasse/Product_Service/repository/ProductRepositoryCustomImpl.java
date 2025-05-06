@@ -25,14 +25,32 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
     @Autowired
     private EntityManager entityManager;
 
-
     @Override
     public Page<Product> findByFilters(Pageable pageable, ProductFilterRequestDto filter) {
-
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // Main query
         CriteriaQuery<Product> cq = cb.createQuery(Product.class);
         Root<Product> root = cq.from(Product.class);
+        List<Predicate> predicates = buildPredicates(cb, root, filter);
+        cq.where(cb.and(predicates.toArray(new Predicate[0])));
+        cq.orderBy(cb.desc(root.get("createdOn")));
 
+        TypedQuery<Product> query = entityManager.createQuery(cq);
+        query.setFirstResult((int) pageable.getOffset());
+        query.setMaxResults(pageable.getPageSize());
+
+        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
+        Root<Product> countRoot = countQuery.from(Product.class);
+        List<Predicate> countPredicates = buildPredicates(cb, countRoot, filter);
+        countQuery.select(cb.count(countRoot)).where(cb.and(countPredicates.toArray(new Predicate[0])));
+        Long total = entityManager.createQuery(countQuery).getSingleResult();
+
+        List<Product> results = query.getResultList();
+        return new PageImpl<>(results, pageable, total);
+    }
+
+    private List<Predicate> buildPredicates(CriteriaBuilder cb, Root<Product> root, ProductFilterRequestDto filter) {
         List<Predicate> predicates = new ArrayList<>();
 
         if (filter.category() != null) {
@@ -55,22 +73,7 @@ public class ProductRepositoryCustomImpl implements ProductRepositoryCustom {
             ));
         }
 
-        cq.where(cb.and(predicates.toArray(new Predicate[0])));
-        cq.orderBy(cb.desc(root.get("createdOn"))); // optional sorting
-
-        // Query for result
-        TypedQuery<Product> query = entityManager.createQuery(cq);
-        query.setFirstResult((int) pageable.getOffset());
-        query.setMaxResults(pageable.getPageSize());
-
-        // Count query
-        CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
-        Root<Product> countRoot = countQuery.from(Product.class);
-        countQuery.select(cb.count(countRoot)).where(cb.and(predicates.toArray(new Predicate[0])));
-        Long total = entityManager.createQuery(countQuery).getSingleResult();
-
-        List<Product> results = query.getResultList();
-        return new PageImpl<>(results, pageable, total);
+        return predicates;
     }
 }
 

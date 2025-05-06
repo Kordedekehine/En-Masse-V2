@@ -5,7 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-
+@Builder
 public record ProductRequestDto (
 
    String name,

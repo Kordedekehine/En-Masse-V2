@@ -54,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse placeOrder(OrderRequest orderRequest, HttpServletRequest request) {
 
        UserInfoResponse userInfos = extractUserIdFromRequest(request);
-       Long userId = Long.valueOf(userInfos.getSub());
+       String userId = userInfos.getSub();
 
         List<Long> productIds = orderRequest.items().stream()
                 .map(OrderItemRequest::productId)
@@ -83,6 +83,12 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal subTotal = product.price().multiply(BigDecimal.valueOf(itemRequest.quantity()));
             totalAmount = totalAmount.add(subTotal);
 
+            log.info("amount : " + totalAmount.toString());
+
+            if (totalAmount.compareTo(BigDecimal.valueOf(1000)) < 0) {
+                throw new IllegalArgumentException("Minimum amount must be at least ₦1000 due to Stripe limits");
+            }
+
             OrderItem orderItem = OrderItem.builder()
                     .productId(product.id())
                     .productName(product.name())
@@ -93,21 +99,12 @@ public class OrderServiceImpl implements OrderService {
             orderItems.add(orderItem);
         }
 
-        Order order = orderRepository.save(Order.builder()
-                .userId(userId)
-                .orderNumber(UUID.randomUUID().toString())
-                .items(orderItems)
-                .status(OrderStatus.AWAITING_PAYMENT)
-                .deliveryAddress(orderRequest.deliveryAddress())
-                .created(Instant.now())
-                .build()
-        );
 
        ResponseEntity<CreatePaymentResponse> paymentResponseEntity = paymentClient.createPayment(
                CreatePaymentRequest.builder()
                        .name("Order for user " + userInfos.getName())
                        .currency("ngn")
-                       .amount(totalAmount.longValue())
+                       .amount(totalAmount)
                        .quantity((long) orderItems.size())
                        .successUrl("https://yourapp.com/payment-success")  // frontend builds a checkout page
                        .cancelUrl("https://yourapp.com/payment-cancel")
@@ -126,6 +123,18 @@ public class OrderServiceImpl implements OrderService {
 
        String sessionUrl = paymentResponse.sessionUrl();
        String sessionId = paymentResponse.sessionId();
+
+       Order order = orderRepository.save(Order.builder()
+               .userId(userId)
+               .orderNumber(UUID.randomUUID().toString())
+               .items(orderItems)
+               .status(OrderStatus.AWAITING_PAYMENT)
+               .deliveryAddress(orderRequest.deliveryAddress())
+               .created(Instant.now())
+               .sessionId(sessionId)
+               .sessionUrl(sessionUrl)
+               .build()
+       );
 
        orderEventProducer.sendOrderCreatedEvent(new OrderCreatedEvent(
                         userId,
@@ -154,6 +163,7 @@ public class OrderServiceImpl implements OrderService {
                 .status(order.getStatus().toString())
                 .created(order.getCreated().toString())
                 .sessionId(sessionId)
+                .sessionUrl(sessionUrl)
                 .build();
 
         log.info("Stripe session URL: {}", sessionUrl);
@@ -219,7 +229,8 @@ public class OrderServiceImpl implements OrderService {
                 order.getDeliveryAddress(),
                 order.getStatus().name(),
                 order.getCreated().toString(),
-                order.getSessionId()
+                order.getSessionId(),
+                order.getSessionUrl()
         );
     }
 
@@ -250,7 +261,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
-    public List<OrderResponse> getOrdersByUser(Long userId) {
+    public List<OrderResponse> getOrdersByUser(String userId) {
         return orderRepository.findAllByUserId(userId)
                 .stream()
                 .map(this::mapOrderToResponse)
@@ -265,7 +276,8 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Missing or invalid Authorization header");
         }
 
-        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(request);
+
+        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(authHeader);
         UserInfoResponse userInfo = userInfoResponse.getBody();
 
         return userInfo;

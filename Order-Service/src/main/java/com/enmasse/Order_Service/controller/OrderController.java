@@ -31,8 +31,8 @@ public class OrderController {
     }
 
 
-    @GetMapping("/place-order")
-    public ResponseEntity<?> getOrdersByUserId(@RequestParam Long id) {
+    @GetMapping("/getOrdersByUserId")
+    public ResponseEntity<?> getOrdersByUserId(@RequestParam String id) {
         List<OrderResponse> getOrdersByUserId = orderService.getOrdersByUser(id);
         return ResponseEntity.ok(getOrdersByUserId);
     }

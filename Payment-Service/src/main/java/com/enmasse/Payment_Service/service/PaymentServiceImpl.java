@@ -30,10 +30,10 @@ public class PaymentServiceImpl implements PaymentService {
     private UserClient userClient;
 
     @Override
-    public CreatePaymentResponse createPayment(CreatePaymentRequest createPaymentRequest, HttpServletRequest request) {
+    public CreatePaymentResponse createPayment(CreatePaymentRequest createPaymentRequest) {
         Stripe.apiKey = secretKey; // Set your Stripe secret key
 
-        UserInfoResponse userInfos = extractUserIdFromRequest(request);
+      //  UserInfoResponse userInfos = extractUserIdFromRequest(request);
 
         try {
             SessionCreateParams params = SessionCreateParams.builder()
@@ -46,10 +46,10 @@ public class PaymentServiceImpl implements PaymentService {
                                     .setPriceData(
                                             SessionCreateParams.LineItem.PriceData.builder()
                                                     .setCurrency(createPaymentRequest.currency())
-                                                    .setUnitAmount(createPaymentRequest.amount())
+                                                    .setUnitAmount(createPaymentRequest.amount().longValue())
                                                     .setProductData(
                                                             SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                                                    .setName(userInfos.getName())
+                                                                    .setName(createPaymentRequest.name())
                                                                     .build()
                                                     )
                                                     .build()
@@ -106,7 +106,8 @@ public class PaymentServiceImpl implements PaymentService {
             throw new RuntimeException("Missing or invalid Authorization header");
         }
 
-        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(request);
+
+        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(authHeader);
         UserInfoResponse userInfo = userInfoResponse.getBody();
 
         return userInfo;

@@ -26,7 +26,7 @@ public class Order {
     private Long id;
 
     @NotNull(message = "User id is required")
-    private Long userId;
+    private String userId;
 
     @NotBlank(message = "Order number is required")
     private String orderNumber;
@@ -39,6 +39,9 @@ public class Order {
     private OrderStatus status;
 
     private String sessionId;
+
+    @Transient
+    private String sessionUrl;
 
     @NotBlank(message = "Delivery address is required")
     private String deliveryAddress;

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 public interface PaymentService {
 
-    CreatePaymentResponse createPayment(CreatePaymentRequest createPaymentRequest, HttpServletRequest request);
+    CreatePaymentResponse createPayment(CreatePaymentRequest createPaymentRequest);
 
     CapturePaymentResponse capturePayment(String sessionId);
 

@@ -5,10 +5,11 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
+@Builder
 public record ProductResponseDto(
 
         Long id,
-        Long storeId,
+        String storeId,
         String name,
         String description,
         String image,

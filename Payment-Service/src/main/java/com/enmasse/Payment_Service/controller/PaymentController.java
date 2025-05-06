@@ -18,8 +18,8 @@ public class PaymentController {
 private PaymentService paymentService;
 
     @PostMapping("/create-payment")
-    public ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody CreatePaymentRequest createPaymentRequest, HttpServletRequest request) {
-        CreatePaymentResponse createPaymentResponse = paymentService.createPayment(createPaymentRequest,request);
+    public ResponseEntity<CreatePaymentResponse> createPayment(@RequestBody CreatePaymentRequest createPaymentRequest) {
+        CreatePaymentResponse createPaymentResponse = paymentService.createPayment(createPaymentRequest);
         return ResponseEntity.ok(createPaymentResponse);
     }
 

@@ -15,6 +15,6 @@ public interface OrderService {
 
     CapturePaymentResponse confirmPaymentAndUpdateOrder(String sessionId);
 
-    List<OrderResponse> getOrdersByUser(Long userId);
+    List<OrderResponse> getOrdersByUser(String userId);
 
 }

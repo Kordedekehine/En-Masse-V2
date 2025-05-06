@@ -31,8 +31,8 @@ public class LoginController {
 
 
     @GetMapping("/userinfo")
-    public ResponseEntity<UserInfoResponse> getUserInfo(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
+    public ResponseEntity<UserInfoResponse> getUserInfo(@RequestHeader("Authorization") String authHeader) {
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.badRequest().build();
         }

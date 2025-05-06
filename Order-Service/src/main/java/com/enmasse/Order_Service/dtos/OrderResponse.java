@@ -9,12 +9,13 @@ import java.util.List;
 @Builder
 public record OrderResponse(
         Long id,
-        Long userId,
+        String userId,
         String orderNumber,
         List<OrderItemResponse> items,
         BigDecimal totalCost,
         String deliveryAddress,
         String status,
         String created,
-        String sessionId
+        String sessionId,
+        String sessionUrl
 ){}

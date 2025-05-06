@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class LogisticServiceApplication {
 
 	public static void main(String[] args) {
+
+
 		SpringApplication.run(LogisticServiceApplication.class, args);
 	}
 

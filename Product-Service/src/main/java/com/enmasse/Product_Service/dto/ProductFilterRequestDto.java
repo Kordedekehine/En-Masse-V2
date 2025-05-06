@@ -1,8 +1,11 @@
 package com.enmasse.Product_Service.dto;
 
+import lombok.Data;
+
+
 public record ProductFilterRequestDto(
         String category,
         String brandId,
-        Long storeId,
+        String storeId,
         String partOfNameOrDescription
 ) {}

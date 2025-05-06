@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,18 +22,21 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-    @PostMapping
-    public ResponseEntity<ProductResponseDto> createProduct(@RequestBody ProductRequestDto productRequest, HttpServletRequest request) {
-        return productService.createProduct(productRequest, request);
+    @PostMapping("/create")
+    public ResponseEntity<?> createProduct(@RequestBody ProductRequestDto productRequest, HttpServletRequest request) {
+        String response = String.valueOf(productService.createProduct(productRequest, request));
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/goods/{id}")
     public ProductResponseDto getProduct(@PathVariable Long id) {
         return productService.getProduct(id);
     }
 
-    @GetMapping("/getProductIds")
-    List<ProductResponseDto> getProductsByIds(List<Long> ids){
+    @PostMapping("/getProductIds")
+    List<ProductResponseDto> getProductsByIds(@RequestParam List<Long> ids){
+
         return productService.getProductsByIds(ids);
     }
 
@@ -54,7 +58,7 @@ public class ProductController {
         return productService.getBrand(id);
     }
 
-    @GetMapping("/brand")
+    @GetMapping("/brands")
     public List<BrandResponseDto> getAllBrands() {
         return productService.getAllBrands();
     }

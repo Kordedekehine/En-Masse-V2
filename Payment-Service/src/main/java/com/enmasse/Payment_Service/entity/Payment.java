@@ -5,6 +5,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 /**
@@ -24,7 +26,7 @@ public class Payment {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    private Long amount;
+    private BigDecimal amount;
 
     private Long quantity;
 

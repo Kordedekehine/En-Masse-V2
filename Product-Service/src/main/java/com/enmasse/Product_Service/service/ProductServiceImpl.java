@@ -72,7 +72,7 @@ public class ProductServiceImpl implements ProductService {
                 });
 
         Product product = Product.builder()
-                .storeId(Long.valueOf(userId))
+                .storeId(userId)
                 .name(productRequest.name())
                 .description(productRequest.description())
                 .image(productRequest.image().getBytes())
@@ -95,7 +95,8 @@ public class ProductServiceImpl implements ProductService {
             throw new RuntimeException("Missing or invalid Authorization header");
         }
 
-        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(request);
+
+        ResponseEntity<UserInfoResponse> userInfoResponse = userClient.getUserInfo(authHeader);
         UserInfoResponse userInfo = userInfoResponse.getBody();
 
         if (userInfo == null || userInfo.getSub() == null) {

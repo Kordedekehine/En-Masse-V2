@@ -26,7 +26,7 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long storeId;
+    private String storeId;
 
     @NotBlank(message = "Name is required")
     private String name;

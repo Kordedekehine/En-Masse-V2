@@ -22,7 +22,7 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userEmail;
+    private String toEmail;
     private String title;
     private String message;
     private String status;

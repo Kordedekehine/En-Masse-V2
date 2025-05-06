@@ -43,7 +43,7 @@ public class NotificationServiceIml implements NotificationService {
 
        // After successful email sending, save the notification to the database
         Notification notification = Notification.builder()
-                .userEmail(request.toEmail())
+                .toEmail(request.toEmail())
                 .title(request.subject())
                 .message(request.message())
                 .status("SENT")

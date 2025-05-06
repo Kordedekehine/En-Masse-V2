@@ -5,11 +5,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(name = "${user-service.name}", url = "${user-service.url}")
 public interface UserClient {
 
     @GetMapping("/userinfo")
-    ResponseEntity<UserInfoResponse> getUserInfo(HttpServletRequest request);
+    ResponseEntity<UserInfoResponse> getUserInfo(@RequestHeader("Authorization") String authHeader);
 
- }
+
+}
