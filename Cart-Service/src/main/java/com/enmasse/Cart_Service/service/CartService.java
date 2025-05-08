@@ -38,7 +38,7 @@ public class CartService {
         );
     }
 
-    public CartResponse addToCart(CartItemRequest cartItemRequest, Long userId) {
+    public CartResponse addToCart(CartItemRequest cartItemRequest, String userId) {
         if (cartItemRepository.findByUserIdAndProductId(userId, cartItemRequest.productId()) == null) {
             CartItem cartItem = CartItem.builder()
                     .productId(cartItemRequest.productId())
@@ -56,21 +56,21 @@ public class CartService {
         }
     }
 
-    public CartResponse getCartItems(Long userId) {
+    public CartResponse getCartItems(String userId) {
         return mapCartItemsToResponse(cartItemRepository.findAllByUserId(userId));
     }
 
-    public CartResponse incrementQuantity(Long userId, String productId) {
+    public CartResponse incrementQuantity(String userId, String productId) {
         cartItemRepository.incrementQuantity(userId, productId);
         return getCartItems(userId);
     }
 
-    public CartResponse decrementQuantity(Long userId, String productId) {
+    public CartResponse decrementQuantity(String userId, String productId) {
         cartItemRepository.decrementQuantity(userId, productId);
         return getCartItems(userId);
     }
 
-    public CartResponse removeFromCart(Long userId, String productId) {
+    public CartResponse removeFromCart(String userId, String productId) {
         cartItemRepository.delete(userId, productId);
         return getCartItems(userId);
     }

@@ -8,11 +8,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+//RAMONTADA DB JUST INCASE
 @Repository
 public interface CartItemJpaRepository extends JpaRepository<CartItem, Long> {
 
-    Optional<CartItem> findByUserIdAndProductId(Long userId, String productId);
-    List<CartItem> findAllByUserId(Long userId);
-    void deleteByUserIdAndProductId(Long userId, String productId);
+    Optional<CartItem> findByUserIdAndProductId(String userId, String productId);
+    List<CartItem> findAllByUserId(String userId);
+    void deleteByUserIdAndProductId(String userId, String productId);
 
 }

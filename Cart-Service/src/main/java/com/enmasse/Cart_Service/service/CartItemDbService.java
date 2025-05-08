@@ -17,7 +17,7 @@ public class CartItemDbService {
     }
 
     @Async
-    public void saveOrUpdate(CartItem cartItem, Long userId) {
+    public void saveOrUpdate(CartItem cartItem, String userId) {
         Optional<CartItem> existing = cartItemJpaRepository.findByUserIdAndProductId(userId, cartItem.getProductId());
         existing.ifPresentOrElse(
                 item -> {
@@ -32,7 +32,7 @@ public class CartItemDbService {
     }
 
     @Async
-    public void deleteByUserIdAndProductId(Long userId, String productId) {
+    public void deleteByUserIdAndProductId(String userId, String productId) {
         cartItemJpaRepository.deleteByUserIdAndProductId(userId, productId);
     }
 }

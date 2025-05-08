@@ -27,22 +27,22 @@ public class CartItemRepository {
         redisTemplate.expire(KEY, 1L, TimeUnit.DAYS);
     }
 
-    public void save(CartItem cartItem, Long userId) {
+    public void save(CartItem cartItem, String userId) {
         redisTemplate.opsForHash().put(userId.toString(), cartItem.getProductId(), cartItem);
         cartItemDbService.saveOrUpdate(cartItem, userId);
     }
 
-    public CartItem findByUserIdAndProductId(Long userId, String productId) {
+    public CartItem findByUserIdAndProductId(String userId, String productId) {
         return (CartItem)redisTemplate.opsForHash().get(userId.toString(), productId);
     }
 
-    public List<CartItem> findAllByUserId(Long userId) {
+    public List<CartItem> findAllByUserId(String userId) {
         return redisTemplate.opsForHash().values(userId.toString()).stream()
                 .map(cartItem -> (CartItem) cartItem)
                 .collect(Collectors.toList());
     }
 
-    public void incrementQuantity(Long userId, String productId) {
+    public void incrementQuantity(String userId, String productId) {
         CartItem cartItem = (CartItem) redisTemplate.opsForHash().get(userId.toString(), productId);
         if (cartItem != null) {
             cartItem.setQuantity(cartItem.getQuantity() + 1);
@@ -55,7 +55,7 @@ public class CartItemRepository {
         }
     }
 
-    public void decrementQuantity(Long userId, String productId) {
+    public void decrementQuantity(String userId, String productId) {
         CartItem cartItem = (CartItem) redisTemplate.opsForHash().get(userId.toString(), productId);
         if (cartItem != null && cartItem.getQuantity() > 0) {
             cartItem.setQuantity(cartItem.getQuantity() - 1);
@@ -67,7 +67,7 @@ public class CartItemRepository {
         }
     }
 
-    public void delete(Long userId, String productId) {
+    public void delete(String userId, String productId) {
         redisTemplate.opsForHash().delete(userId.toString(), productId);
         cartItemDbService.deleteByUserIdAndProductId(userId, productId);
     }

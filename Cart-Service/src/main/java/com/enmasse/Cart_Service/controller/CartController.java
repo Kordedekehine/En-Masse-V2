@@ -16,29 +16,28 @@ public class CartController {
     @Autowired
    private CartService cartService;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CartResponse addToCart(@RequestBody CartItemRequest cartItemRequest, @RequestParam(name="userId") Long userId) {
+    @PostMapping("/add")
+    public CartResponse addToCart(@RequestBody CartItemRequest cartItemRequest, @RequestParam(name="userId") String userId) {
         return cartService.addToCart(cartItemRequest, userId);
     }
 
-    @GetMapping
-    public CartResponse getCartItems(@RequestParam(name="userId") Long userId) {
+    @GetMapping("/getCarts")
+    public CartResponse getCartItems(@RequestParam(name="userId") String userId) {
         return cartService.getCartItems(userId);
     }
 
     @GetMapping("/{productId}/increment")
-    public CartResponse incrementQuantity(@RequestParam(name="userId") Long userId, @PathVariable String productId) {
+    public CartResponse incrementQuantity(@RequestParam(name="userId") String userId, @PathVariable String productId) {
         return cartService.incrementQuantity(userId, productId);
     }
 
     @GetMapping("/{productId}/decrement")
-    public CartResponse decrementQuantity(@RequestParam(name="userId") Long userId, @PathVariable String productId) {
+    public CartResponse decrementQuantity(@RequestParam(name="userId") String userId, @PathVariable String productId) {
         return cartService.decrementQuantity(userId, productId);
     }
 
     @DeleteMapping("/{productId}")
-    public CartResponse delete(@RequestParam(name="userId") Long userId, @PathVariable String productId) {
+    public CartResponse delete(@RequestParam(name="userId") String userId, @PathVariable String productId) {
         return cartService.removeFromCart(userId, productId);
     }
 
