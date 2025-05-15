@@ -32,7 +32,7 @@ public class Payment {
 
     private String currency;
 
-    private String name;
+    private String sessionId;
 
-    private String sessionID;
+    private String status;
 }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-//RAMONTADA DB JUST INCASE
+//RAMONTADA REPO
 @Repository
 public interface CartItemJpaRepository extends JpaRepository<CartItem, Long> {
 

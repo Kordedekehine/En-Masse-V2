@@ -2,6 +2,7 @@ package com.enmasse.Payment_Service.service;
 
 import com.enmasse.Payment_Service.client.UserClient;
 import com.enmasse.Payment_Service.dtos.*;
+import com.enmasse.Payment_Service.entity.Payment;
 import com.enmasse.Payment_Service.repository.PaymentRepository;
 import com.enmasse.Payment_Service.utils.Constant;
 import com.stripe.Stripe;
@@ -15,6 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @Slf4j
@@ -33,8 +37,6 @@ public class PaymentServiceImpl implements PaymentService {
     public CreatePaymentResponse createPayment(CreatePaymentRequest createPaymentRequest) {
         Stripe.apiKey = secretKey; // Set your Stripe secret key
 
-      //  UserInfoResponse userInfos = extractUserIdFromRequest(request);
-
         try {
             SessionCreateParams params = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.PAYMENT)
@@ -46,7 +48,8 @@ public class PaymentServiceImpl implements PaymentService {
                                     .setPriceData(
                                             SessionCreateParams.LineItem.PriceData.builder()
                                                     .setCurrency(createPaymentRequest.currency())
-                                                    .setUnitAmount(createPaymentRequest.amount().longValue())
+                                                    .setUnitAmount(createPaymentRequest.amount().multiply(BigDecimal.valueOf(100))
+                                                            .setScale(0, RoundingMode.HALF_UP).longValue())
                                                     .setProductData(
                                                             SessionCreateParams.LineItem.PriceData.ProductData.builder()
                                                                     .setName(createPaymentRequest.name())
@@ -59,6 +62,16 @@ public class PaymentServiceImpl implements PaymentService {
                     .build();
 
             Session session = Session.create(params);
+
+            Payment payment = new Payment();
+            payment.setSessionId(session.getId());
+            payment.setCurrency(createPaymentRequest.currency());
+            payment.setAmount(createPaymentRequest.amount());
+            payment.setCurrency(createPaymentRequest.currency());
+            payment.setQuantity(createPaymentRequest.quantity());
+            payment.setStatus(session.getStatus());
+
+            paymentRepository.save(payment);
 
             return CreatePaymentResponse.builder()
                     .sessionId(session.getId())
@@ -85,6 +98,12 @@ public class PaymentServiceImpl implements PaymentService {
             } else {
                 log.info("Payment not yet completed for sessionId: {}. Current status: {}", sessionId, status);
             }
+
+            Payment payment = paymentRepository.findBySessionId(sessionId)
+                    .orElseThrow(() -> new RuntimeException("Order not found for sessionId: " + sessionId));
+
+            payment.setStatus(status);
+            paymentRepository.save(payment);
 
             return CapturePaymentResponse.builder()
                     .sessionId(sessionId)

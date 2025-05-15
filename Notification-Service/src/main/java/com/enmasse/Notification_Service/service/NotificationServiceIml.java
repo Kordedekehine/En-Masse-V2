@@ -19,11 +19,15 @@ import java.util.List;
 @Service
 public class NotificationServiceIml implements NotificationService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+
+    private final JavaMailSender mailSender;
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    public NotificationServiceIml(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     @Override
     public void sendNotification(NotificationRequest request) throws NotificationException {

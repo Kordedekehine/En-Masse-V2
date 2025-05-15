@@ -11,6 +11,7 @@ public record CreatePaymentRequest(
      Long quantity,
      String currency,
      String name,
+     String status,
      String successUrl,
      String cancelUrl
 ){}

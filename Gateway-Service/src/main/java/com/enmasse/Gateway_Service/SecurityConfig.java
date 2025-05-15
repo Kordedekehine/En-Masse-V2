@@ -19,7 +19,7 @@ public class SecurityConfig {
                 .cors(ServerHttpSecurity.CorsSpec::disable)
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers("/api/v1/user/*",
-                                "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                                "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**","/swagger-ui/index.html","/swagger-ui.html").permitAll()
                         .pathMatchers(HttpMethod.GET,"/api/v1/product/**").permitAll()
                         .anyExchange().authenticated()
                 )
