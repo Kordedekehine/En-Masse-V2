@@ -67,7 +67,6 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Some products not found in catalog");
         }
 
-        // 2. Validate stock and prepare order items
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -137,16 +136,6 @@ public class OrderServiceImpl implements OrderService {
                .build()
        );
 
-       orderEventProducer.sendOrderCreatedEvent(new OrderCreatedEvent(
-                        userId,
-                        orderItems.stream()
-                                .map(item -> new OrderItemRequest(
-                                        item.getProductId(),
-                                        item.getProductName(),
-                                        item.getQuantity(),
-                                        item.getPrice()
-                                ))
-                                .toList(), sessionId));
 
         List<ProductStockDto> productsOrdered = order.getItems().stream()
                 .map(item -> new ProductStockDto(item.getProductId(), item.getQuantity()))

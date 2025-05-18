@@ -182,38 +182,23 @@ public class ProductServiceImpl implements ProductService {
         return new ResponseEntity<>("Stocks updated", HttpStatus.OK);
     }
 
-    public void consumeOrderCreatedEvent(OrderCreatedEvent event) {
-        List<OrderItemRequest> orderedItems = event.items();
-        List<Product> updatedProducts = new ArrayList<>();
+    public void updateProductStock(List<ProductStockDto> productsOrdered){
+        log.info("Received new order: {}", productsOrdered);
 
-        for (OrderItemRequest itemRequest : orderedItems) {
-            Optional<Product> productOptional = productRepository.findById(itemRequest.productId());
-
-            if (productOptional.isEmpty()) {
-                log.warn("Product not found for ID: {}", itemRequest.productId());
-                continue;
-            }
+        List<Product> products = new ArrayList<>();
+        for (ProductStockDto productOrdered : productsOrdered) {
+            Optional<Product> productOptional = productRepository.findById(productOrdered.id());
+            if (productOptional.isEmpty())
+         continue;
 
             Product product = productOptional.get();
+            int newStock = Math.max(product.getStock() - productOrdered.quantity(), 0);
 
-            if (product.getStock() < itemRequest.quantity()) {
-                log.error("Insufficient stock for Product ID: {}. Available: {}, Needed: {}",
-                        product.getId(), product.getStock(), itemRequest.quantity());
-                continue;
-            }
-
-            product.setStock(product.getStock() - itemRequest.quantity());
-            updatedProducts.add(product);
-
-            log.info("Prepared stock update for product: {}, New stock: {}",
-                    product.getName(), product.getStock());
+            product.setStock(newStock);
+            products.add(product);
         }
 
-        if (!updatedProducts.isEmpty()) {
-            productRepository.saveAll(updatedProducts);
-            log.info("Successfully updated stock for {} products.", updatedProducts.size());
-        } else {
-            log.warn("No product stocks were updated.");
-        }
+        productRepository.saveAll(products);
+        log.info("Stocks updated");
     }
 }

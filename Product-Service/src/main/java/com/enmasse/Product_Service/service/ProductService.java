@@ -24,6 +24,8 @@ public interface ProductService {
 
    ResponseEntity<String> setProductStocks(List<ProductStockDto> stocks);
 
-   void consumeOrderCreatedEvent(OrderCreatedEvent event);
+   void updateProductStock(List<ProductStockDto> productsOrdered);
+
+  // void updateProductStock(List<ProductStockDto> productsOrdered);
 
 }
